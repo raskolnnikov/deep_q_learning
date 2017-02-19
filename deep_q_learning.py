@@ -1,8 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import gym
-from gym import wrappers
-
 from keras.models import Sequential
 from keras.layers import Dense, Activation, Flatten
 from keras.optimizers import Adam, SGD
@@ -19,8 +17,7 @@ random.seed(sd)
 env.seed(sd)
 nb_actions = env.action_space.n
 
-# env = wrappers.Monitor(env, '/tmp/experiment-1', force=True)
-
+"""Keras model for a fully connected 4 layer NN"""
 model = Sequential()
 model.add(Flatten(input_shape=(1,) + env.observation_space.shape))
 model.add(Dense(40))
@@ -51,7 +48,6 @@ def get_best_action(state):
 def get_targets(state, action, reward, next_state):
     """
     Returns a set of target Q-values for a particular <s, a, r, s'> tuple
-
     """
     current_state_q_values = forward_pass(state)
     next_state_q_values = forward_pass(next_state)
@@ -67,6 +63,10 @@ def get_targets(state, action, reward, next_state):
 
 
 def choose_action(state, epsilon):
+    """
+    Greedy-epsilon exploration. Chooses action with the highest Q(s,a) value.
+    With probability epsilon chooses a random action.
+    """
     r = np.random.uniform()
     if r < epsilon:
         action = np.floor(np.random.randint(nb_actions))
@@ -116,6 +116,11 @@ def unpack_experience(experience):
 
 
 def learn_from_replay_memories(memory, batch_size):
+    """
+    Take a uniformly distributed batch of experiences and set the corresponding
+    targets. Then train the network sequentally on each individual
+    (experience, target) pair.
+    """
     sample_batch = memory.sample_experiences(batch_size)
     for e in sample_batch:
         state, action, reward, new_state = unpack_experience(e)
@@ -125,40 +130,49 @@ def learn_from_replay_memories(memory, batch_size):
         model.train_on_batch(x, targets)
 
 mini_batch_size = 5
-replay_memory_size = 100
-gamma = 0.9
-epsilon = 0.30
+replay_memory_size = 25
+gamma = 0.1
+epsilon = 0.1
 max_steps_per_epoch = 1000
-max_epochs = 1000
+max_epochs = 5000
 
 memory = Memory(replay_memory_size, 18)
 total_reward = np.zeros(max_epochs)
 
 
 for epoch in xrange(max_epochs):
-    print "Episode #%i" % epoch
     state = env.reset()
-    # env.render()
     current_step = 0
     epoch_done = False
     while current_step < max_steps_per_epoch and not epoch_done:
+        # Choose an action using the greedy-epsilon policy
         action = choose_action(state, epsilon)
         new_state, reward, epoch_done, info = env.step(action)
-
         total_reward[epoch] = total_reward[epoch] + reward
-
+        # Store the experience in memory buffer
         experience = pack_experience(state, action, reward, new_state)
-
         memory.add_experience(experience)
+
         current_step = current_step + 1
         state = new_state
-
+        # Learn from past experiences
         learn_from_replay_memories(memory, mini_batch_size)
 
-    print "episode reward = %0.2f" % total_reward[epoch]
-    if(not epoch % 10):
-        print "last 10 episode avg = %0.2f" % np.average(
-            total_reward[epoch-10:epoch])
+    if not epoch % 10 and epoch and gamma < 0.975:
+        # Gradually increase gamma to improve the importance of future-rewards
+        # as the NN learns and becomes more accurate
+        gamma = gamma * 1.0125
+        print "New gamma = %0.2f" % gamma
 
-    # gamma = gamma * gamma
-    # print "memory size = %i" % len(memory.experiences)
+    print "Episode %i reward = %0.2f" % (epoch, total_reward[epoch])
+    if not epoch % 10 and epoch:
+        print "---------------------------"
+        print "Last 10 episode avg = %0.2f" % np.average(
+            total_reward[epoch-10:epoch])
+        print "---------------------------"
+
+    if epoch and np.average(total_reward[epoch-100:epoch]) > 150:
+        break
+
+print "Max episode reward = %0.2f" % np.max(total_reward)
+model.save('dqn.h5')
