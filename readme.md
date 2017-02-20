@@ -8,12 +8,12 @@ unfeasible for significantly large state spaces. We use an alternative approach 
 by using a Neural Network.
 
 ## Dependencies
-* Python 2.7 [Link](https://www.python.org/download/releases/2.7/)
-* Numpy [Link](http://www.numpy.org/)
-* Scipy [Link](https://www.scipy.org/)
-* Keras [Link](https://keras.io/)
-* OpenAI Gym [Link](https://github.com/openai/gym)
+* Python 2.7 [https://www.python.org/download/releases/2.7/]
+* Numpy [http://www.numpy.org/]
+* Scipy [https://www.scipy.org/]
+* Keras [https://keras.io/]
+* OpenAI Gym [https://github.com/openai/gym]
 
 ## Videos
-* [Untrained network](https://www.youtube.com/watch?v=Mv6hkyALfBQ&feature=youtu.be)
-* [Trained network](https://www.youtube.com/watch?v=3XugSeNJtZQ)
+* [Untrained network](https://www.youtube.com/watch?v=T72fQgUWD90)
+* [Trained network](https://www.youtube.com/watch?v=kTpkaOgMBEM)
